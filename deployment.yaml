@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ubuntu-sleeper
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ubuntu-sleeper-pod
+  template:
+    metadata:
+      labels:
+        app: ubuntu-sleeper-pod
+    spec:
+      containers:
+      - name: ubuntu-sleeper-container
+        image: krishnakadocker/ubuntu-sleeper:v2
+        command: ['sleep']   # this overrides the ENTRYPOINT OF Dockerfile
+        args: ['120']        # this overrides the CMD of Dockerfile
+        env:
+        - name: var1
+          value: "hello"
+        - name: var2
+          value: "world"
+        - name: greeting
+          value: $(var1) $(var2)
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: config-map
+              key: PORT
+        - name: EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: my-secrets
+              key: EMAIL
+        envFrom:
+        - configMapRef:
+            name: config-map #The key from the ConfigMap becomes the environment variable name in the Pod.
+        - secretRef:
+            name: my-secrets
+        volumeMounts:
+        - mountPath: /opt/sec
+          name: secret-volume
+        - mountPath: /opt/cm
+          name: cm-volume
+        - mountPath: /opt/vol
+          name: my-vol
+        - mountPath: /opt/pvc
+          name: my-pvc
+
+      volumes:
+        - name: secret-volume
+          secret:
+            secretName: my-secrets
+        - name: cm-volume
+          configMap:
+            name: config-map
+        - name: my-vol
+          hostPath:
+            path: /vol
+        - name: my-pvc
+          persistentVolumeClaim:
+            claimName: my-pvc          
